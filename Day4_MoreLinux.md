@@ -214,13 +214,13 @@ i → enter Insert Mode → type anything → Esc to go back
 #### 3. ⌨️ Command Mode — Save, Quit & Execute
 > Press `Esc` to enter Command Mode, then type commands:
 
-| Command | Action |
-|---------|--------|
-| `:w` + Enter | 💾 Save |
-| `:q` + Enter | 🚪 Quit |
-| `:wq` + Enter | 💾🚪 Save & Quit |
-| `:wq!` + Enter | ⚠️ Force Save & Quit |
-| `:u` + Enter | ↩️ Undo |
+| Command         | Action                               |
+| --------------- | ------------------------------------ |
+| `:w` + Enter    | 💾 Save                              |
+| `:q` + Enter    | 🚪 Quit                              |
+| `:wq` + Enter   | 💾🚪 Save & Quit                     |
+| `:wq!` + Enter  | ⚠️ Force Save & Quit                 |
+| `:u` + Enter    | ↩️ Undo                              |
 | `:%!ls` + Enter | 🖥️ Execute bash command (e.g. `ls`) |
 
 ---
