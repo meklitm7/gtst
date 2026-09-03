@@ -521,3 +521,5 @@ Template   Site Cloner   Custom Import
 > 🔥 **Main lesson:**
 > **Social-media "hacking" often means attacking the human rather than breaking the social-media platform itself.**
 > **Awareness + MFA + protecting OTPs + protecting sessions = strong defense.**
+> **Indicator of compromise (IOC)**
+**IOCs such as malware signatures or domain names provide evidence of security breaches and details about them.**
