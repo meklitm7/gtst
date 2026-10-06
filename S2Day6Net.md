@@ -953,3 +953,943 @@ frame.number == N
 Find a specific packet
 ```
 
+# 🦈 TShark, TCPDump, ARP & Network Attacks
+
+# 1. 🦈 TShark
+
+**TShark** is a **command-line network protocol analyzer**.
+
+It is basically the command-line tool from the Wireshark project, so it does not provide the normal Wireshark GUI.
+
+### ⭐ Why use TShark?
+
+TShark is useful when:
+
+* Working from the terminal
+* Analyzing large packet captures
+* Automating packet analysis
+* Using tools such as `grep` and `awk`
+* Working with scripts
+
+```text
+Wireshark → GUI + packet analysis
+
+TShark    → Command line + packet analysis
+```
+
+---
+
+## 🔹 Capture Traffic
+
+```bash
+sudo tshark -i <interface>
+```
+
+Example:
+
+```bash
+sudo tshark -i wlan0
+```
+
+`-i` specifies the **network interface** to capture from.
+
+---
+
+## 🔎 Filter While Capturing
+
+We can use `-Y` for a **display filter**.
+
+```bash
+sudo tshark -i wlan0 -Y 'ip.src == 192.168.1.10'
+```
+
+➡️ Shows packets where the source IP is `192.168.1.10`.
+
+### 🧠 Remember
+
+```text
+-i → interface
+-Y → display filter
+```
+
+---
+
+# 📂 Read a Capture File
+
+We can read an existing capture file using `-r`.
+
+```bash
+sudo tshark -r <filepath>
+```
+
+Example:
+
+```bash
+sudo tshark -r capture.pcap
+```
+
+### Hide error messages
+
+```bash
+tshark -r capture.pcap 2>/dev/null
+```
+
+`2>/dev/null` redirects error messages to `/dev/null`.
+
+```text
+2 → stderr
+> → redirect
+/dev/null → discard the output
+```
+
+---
+
+# 💾 Write/Save a Capture
+
+We can save captured packets into a file using `-w`.
+
+```bash
+sudo tshark -i wlan0 -w capture.pcap
+```
+
+➡️ Captured packets are saved into `capture.pcap`.
+
+```text
+Network Traffic
+      ↓
+    TShark
+      ↓
+ capture.pcap
+```
+
+---
+
+# ⏰ Time Format
+
+TShark can change the way packet timestamps are displayed.
+
+```bash
+tshark -i <interface> -t ad
+```
+
+`-t` controls the **time format**.
+
+`ad` means an **absolute date and time** format.
+
+---
+
+# 🔢 Limit the Number of Packets
+
+We can use `-c` to limit the number of packets processed/captured.
+
+```bash
+tshark -r capture.pcap -c 10
+```
+
+➡️ Processes only the first **10 packets** from the capture.
+
+---
+
+# 🔢 Using `awk`
+
+We can pipe TShark output into `awk`.
+
+Example:
+
+```bash
+tshark -r capture.pcap | awk '{print $1}'
+```
+
+➡️ Prints the first whitespace-separated field from each line.
+
+This is useful when we want to extract specific information from command output.
+
+---
+
+# 🔗 Follow TCP Streams
+
+We can use TShark's `-z follow` feature to follow a TCP stream.
+
+```bash
+tshark -r capture.pcap -q -z follow,tcp,ascii,<stream_number>
+```
+
+For example:
+
+```bash
+tshark -r capture.pcap -q -z follow,tcp,ascii,0
+```
+
+### What do these options mean?
+
+```text
+-r → read capture file
+-q → quiet output
+-z → statistics/follow feature
+follow → follow a stream
+tcp → TCP stream
+ascii → display stream as ASCII
+0 → stream number
+```
+
+---
+
+## 🔄 Follow Multiple Streams
+
+For example:
+
+```bash
+for i in {0..5}; do
+    tshark -r capture.pcap -q -z follow,tcp,ascii,$i
+done
+```
+
+➡️ Loops through TCP stream numbers `0` to `5`.
+
+### Search the output
+
+We can pipe the result into `grep`:
+
+```bash
+for i in {0..5}; do
+    tshark -r capture.pcap -q -z follow,tcp,ascii,$i
+done | grep "Password"
+```
+
+➡️ Searches the displayed stream data for the word **Password**.
+
+> ⚠️ Only inspect traffic and credentials from captures you are authorized to analyze.
+
+---
+
+# 🔎 TShark + AWK + Grep
+
+We can combine command-line tools:
+
+```text
+TShark
+  ↓
+Extract packet information
+  ↓
+awk
+  ↓
+Select a field
+  ↓
+grep
+  ↓
+Search for specific text
+```
+
+For example:
+
+```bash
+tshark -r capture.pcap | awk '{print $<number>}' | grep "HTTP"
+```
+
+The exact field number depends on the TShark output format, so we should inspect the output first instead of assuming a fixed field number.
+
+---
+
+# 2. 🐧 TCPDump
+
+**tcpdump** is another **command-line packet capture and analysis tool**.
+
+It is similar to TShark because both work from the terminal, but their output and filtering syntax are different.
+
+---
+
+## 🔹 Capture from an Interface
+
+```bash
+sudo tcpdump -i <interface>
+```
+
+Example:
+
+```bash
+sudo tcpdump -i wlan0
+```
+
+---
+
+## 🔹 Filter by Port
+
+```bash
+sudo tcpdump -i wlan0 port <port_number>
+```
+
+Example:
+
+```bash
+sudo tcpdump -i wlan0 port 80
+```
+
+➡️ Captures traffic involving port `80`.
+
+---
+
+## 🔹 Filter by Protocol
+
+```bash
+sudo tcpdump -i wlan0 <protocol>
+```
+
+Example:
+
+```bash
+sudo tcpdump -i wlan0 tcp
+```
+
+➡️ Captures TCP traffic.
+
+Other examples:
+
+```text
+tcp
+udp
+icmp
+arp
+```
+
+---
+
+# 3. 🔗 ARP
+
+**ARP** stands for:
+
+> **Address Resolution Protocol**
+
+ARP is used in IPv4 networks to map an **IP address to a MAC address** on the local network.
+
+### 🧠 Simple Example
+
+Suppose our computer wants to communicate with:
+
+```text
+IP: 192.168.1.1
+```
+
+but it needs the device's MAC address.
+
+It sends an ARP request that is essentially asking:
+
+> **"Who has 192.168.1.1? Tell me your MAC address."**
+
+The device that owns that IP can respond with its MAC address.
+
+```text
+Our PC
+  │
+  │ ARP Request:
+  │ "Who has 192.168.1.1?"
+  ↓
+Broadcast
+  │
+  ├── Device A ❌
+  ├── Device B ❌
+  └── Gateway ✅
+          │
+          ↓
+     "My MAC is XX:XX:XX..."
+```
+
+---
+
+# 📋 ARP Table
+
+Our computer keeps ARP information in an **ARP cache/table**.
+
+We can view it with:
+
+```bash
+arp
+```
+
+On modern Linux systems, another common command is:
+
+```bash
+ip neigh
+```
+
+---
+
+# 4. 🌊 MAC Flooding
+
+**MAC flooding** is an attack against a network switch.
+
+The basic idea is to send a very large number of fake MAC addresses so that the switch's **MAC address table** becomes overwhelmed.
+
+A switch normally uses its MAC address table to know:
+
+```text
+MAC address → Switch port
+```
+
+If the table becomes full, the switch may behave differently with unknown destinations, potentially causing more traffic to be flooded.
+
+### 🧠 Simple idea
+
+```text
+Normal:
+
+MAC A → Port 1
+MAC B → Port 2
+MAC C → Port 3
+
+
+MAC Flooding:
+
+MAC A
+MAC B
+MAC C
+MAC D
+MAC E
+MAC F
+MAC G
+...
+      ↓
+Many fake MAC addresses
+      ↓
+MAC table becomes overwhelmed
+```
+
+> ⚠️ Modern switches have protections against this attack, and behavior depends on the switch configuration.
+
+---
+
+## 🛠️ MAC Flooding Tool
+
+`macof` is a tool associated with MAC flooding testing.
+
+In an **authorized lab**, it can be used to demonstrate the behavior of a switch under a large number of generated MAC addresses.
+
+```bash
+sudo macof -i <interface>
+```
+
+> ⚠️ Do not run MAC flooding against networks you do not own or have permission to test.
+
+---
+
+# 🛡️ Prevention of MAC Flooding
+
+### 🔐 Port Security
+
+**Port security** can limit the number of MAC addresses allowed on a switch port.
+
+```text
+Switch Port
+     ↓
+Maximum allowed MAC addresses
+     ↓
+Too many MACs → Security action
+```
+
+### 🔐 MAC Filtering
+
+MAC filtering can control which MAC addresses are allowed on a network or port.
+
+> 💡 Port security is generally the more relevant switch-level protection against MAC-table flooding.
+
+---
+
+# 5. 🎭 ARP Spoofing / ARP Cache Poisoning
+
+**ARP spoofing** is a technique where an attacker sends false ARP information to associate their MAC address with another device's IP address.
+
+It can be used to position an attacker between two devices, creating a **Man-in-the-Middle (MITM)** situation.
+
+### 🧠 Normal Communication
+
+```text
+Computer ───────────→ Gateway
+```
+
+### 🎭 ARP Spoofing
+
+```text
+Computer
+    ↓
+ Attacker
+    ↓
+ Gateway
+```
+
+The attacker attempts to make both sides believe that the attacker's MAC address belongs to the other device.
+
+This can allow traffic to pass through the attacker.
+
+---
+
+# 🧪 ARP Spoofing — Lab Concept
+
+In an authorized lab, the general process involves:
+
+```text
+1. Identify the target and gateway
+          ↓
+2. Understand their IP/MAC mappings
+          ↓
+3. Enable packet forwarding
+          ↓
+4. Perform ARP poisoning
+          ↓
+5. Observe traffic in the lab
+```
+
+### Packet forwarding
+
+Linux can be configured to forward IPv4 packets:
+
+```bash
+sudo sysctl net.ipv4.ip_forward=1
+```
+
+> ⚠️ Disabling a firewall is **not inherently required** for ARP spoofing and is generally a bad security practice. In a lab, configure firewall rules deliberately rather than simply disabling the firewall.
+
+---
+
+# 🛠️ Bettercap
+
+**Bettercap** is a network attack and monitoring framework that can be used in authorized security labs.
+
+Start Bettercap on an interface:
+
+```bash
+sudo bettercap -iface <interface>
+```
+
+### Discover devices
+
+```text
+net.probe on
+```
+
+Then:
+
+```text
+net.show
+```
+
+➡️ Shows discovered network devices.
+
+Bettercap can also perform ARP spoofing in an authorized lab using its ARP spoofing features.
+
+> ⚠️ Use this only on networks where you have explicit permission.
+
+---
+
+# 🌐 HTTP vs HTTPS
+
+### HTTP
+
+HTTP sends web traffic without TLS encryption.
+
+```text
+Client ───── HTTP ─────→ Server
+```
+
+Traffic may be readable if it is captured.
+
+### HTTPS
+
+HTTPS uses **TLS** to protect HTTP communication.
+
+```text
+Client ───── HTTPS/TLS ─────→ Server
+```
+
+The contents are encrypted in transit.
+
+---
+
+# 🔒 HSTS
+
+**HSTS** stands for:
+
+> **HTTP Strict Transport Security**
+
+It tells a browser that a website should be accessed using **HTTPS**.
+
+This helps prevent certain downgrade attacks where an attacker tries to make a user use HTTP instead of HTTPS.
+
+---
+
+# 🛡️ ARP Spoofing Prevention
+
+Some defensive techniques include:
+
+### 1. 🔐 Static ARP Entries
+
+Important devices can have manually configured/static ARP mappings.
+
+### 2. 🔐 Switch Security Features
+
+Managed switches may provide features designed to detect or prevent ARP poisoning.
+
+Examples include:
+
+* Dynamic ARP Inspection (DAI)
+* DHCP Snooping
+* Port security
+
+---
+
+# 6. 🌐 DNS Spoofing
+
+**DNS** stands for:
+
+> **Domain Name System**
+
+DNS maps domain names to IP addresses.
+
+For example:
+
+```text
+google.com
+     ↓
+IP address
+```
+
+### 🎭 DNS Spoofing
+
+In DNS spoofing, an attacker attempts to provide a **false DNS response** so that a domain resolves to an incorrect IP address.
+
+Example:
+
+```text
+User enters:
+google.com
+     ↓
+Attacker-controlled DNS response
+     ↓
+Wrong IP address
+     ↓
+Malicious/fake website
+```
+
+This can be used as part of a **Man-in-the-Middle** attack.
+
+---
+
+# 🧪 DNS Spoofing — Lab Concept
+
+In an authorized lab, the general flow is:
+
+```text
+Prepare a controlled test website
+          ↓
+ARP poisoning / traffic redirection
+          ↓
+DNS spoofing
+          ↓
+Controlled domain resolves to lab IP
+          ↓
+Observe the result
+```
+
+Bettercap has DNS spoofing functionality that can be used in a controlled lab.
+
+For example, the concept is:
+
+```text
+DNS spoofing
+     ↓
+Specify a test domain
+     ↓
+Enable DNS spoofing
+```
+
+> ⚠️ Never redirect real users or real domains without explicit authorization.
+
+---
+
+# 🛡️ DNS Spoofing Prevention
+
+Defensive techniques include:
+
+* 🔒 Use HTTPS
+* 🔒 Use HSTS
+* 🔐 Use trusted DNS resolvers
+* 🔐 Use DNSSEC where appropriate
+* 🔐 Monitor suspicious DNS changes
+* 🔐 Use secure network configurations
+
+---
+
+# 7. ⬇️ Protocol Downgrade Attack
+
+A **protocol downgrade attack** attempts to force communication from a stronger/secure protocol to a weaker one.
+
+For example:
+
+```text
+HTTPS
+  ↓
+HTTP
+```
+
+The goal is to make the victim use an insecure protocol.
+
+### 🛡️ Prevention
+
+* Use HTTPS
+* Enable HSTS
+* Avoid insecure HTTP redirects
+* Keep browsers and servers updated
+* Use secure TLS configurations
+
+> ⭐ HSTS is especially important because it tells the browser to use HTTPS for the protected domain.
+
+---
+
+# 8. 💥 DoS / DDoS Attacks
+
+## DoS
+
+**DoS** stands for:
+
+> **Denial of Service**
+
+A DoS attack attempts to make a service unavailable by overwhelming or exhausting its resources.
+
+---
+
+## DDoS
+
+**DDoS** stands for:
+
+> **Distributed Denial of Service**
+
+The attack traffic comes from **many systems**, rather than a single source.
+
+```text
+       Attacker
+           ↓
+    ┌──────┼──────┐
+    ↓      ↓      ↓
+  Bot 1   Bot 2   Bot 3
+    ↓      ↓      ↓
+    └──────┼──────┘
+           ↓
+        Server
+```
+
+---
+
+# 💥 Types of DoS Attacks
+
+## 1. SYN Flood
+
+A SYN flood sends a large number of TCP connection requests.
+
+```text
+SYN
+SYN
+SYN
+SYN
+SYN
+ ↓
+Server resources
+ ↓
+Can become exhausted
+```
+
+---
+
+## 2. Service Request Flood
+
+The attacker sends a very large number of requests to a service.
+
+The goal is to consume:
+
+* CPU
+* Memory
+* Connections
+* Bandwidth
+* Other resources
+
+---
+
+## 3. Application-Level DoS
+
+This targets the application layer and may exploit:
+
+* Expensive operations
+* Poorly designed application logic
+* Resource-intensive requests
+* Application vulnerabilities
+
+---
+
+# 🛠️ DoS/DDoS Testing Tools
+
+Tools that may appear in security training include:
+
+```text
+LOIC
+HOIC
+Slowloris / RUDY
+PyLoris
+DDOSIM
+```
+
+
+---
+
+# 🛡️ DoS/DDoS Prevention
+
+### ☁️ Use DDoS Protection
+
+Services such as DDoS-protection/CDN providers can absorb and filter malicious traffic.
+
+### 🔥 Firewalls
+
+Configure firewalls to filter unwanted traffic.
+
+### 📡 Control Broadcast Traffic
+
+Limit or control unnecessary broadcast traffic on the network.
+
+### 📊 Monitor Inbound Traffic
+
+Monitor incoming traffic for unusual:
+
+* Traffic volume
+* Connection rates
+* Source patterns
+* Protocol behavior
+
+---
+
+# 🛡️ General Network Security Prevention
+
+## 🔥 1. Deploy a Robust Firewall
+
+A firewall controls network traffic based on security rules.
+
+---
+
+## 🚨 2. IDS/IPS
+
+**IDS** = Intrusion Detection System
+
+➡️ Detects suspicious activity.
+
+**IPS** = Intrusion Prevention System
+
+➡️ Detects and can actively block suspicious activity.
+
+```text
+IDS → Detect
+
+IPS → Detect + Prevent/Block
+```
+
+---
+
+## 🔐 3. Strong Data Encryption
+
+Use encryption to protect sensitive data during transmission and storage.
+
+Examples:
+
+```text
+HTTPS/TLS
+SSH
+VPN
+```
+
+---
+
+## 🔑 4. Strong Access Controls
+
+Use:
+
+* Strong authentication
+* Least privilege
+* MFA
+* Proper authorization
+* Account management
+
+---
+
+## 🔎 5. Regular Vulnerability Assessment
+
+Regularly check systems for security weaknesses.
+
+---
+
+## 🧪 6. Penetration Testing
+
+Conduct authorized penetration testing to identify and fix vulnerabilities before attackers exploit them.
+
+---
+
+# 🧠 QUICK MEMORY
+
+```text
+TShark
+→ Command-line packet analysis
+
+TCPDump
+→ Command-line packet capture
+
+ARP
+→ IP → MAC mapping
+
+MAC Flooding
+→ Overwhelm switch MAC table
+
+ARP Spoofing
+→ Fake ARP mappings
+
+DNS Spoofing
+→ Fake DNS response
+
+HTTPS
+→ HTTP protected by TLS
+
+HSTS
+→ Force/use HTTPS for a domain
+
+DoS
+→ Deny service from one/fewer sources
+
+DDoS
+→ Distributed denial of service
+
+IDS
+→ Detect
+
+IPS
+→ Detect + Prevent
+```
+
+# ⭐ Network Attack Concepts
+
+```text
+MAC Flooding
+     ↓
+Targets switch MAC table
+
+ARP Spoofing
+     ↓
+Targets ARP mappings
+
+DNS Spoofing
+     ↓
+Targets DNS resolution
+
+Protocol Downgrade
+     ↓
+Attempts to move from secure → insecure protocol
+
+DoS
+     ↓
+Targets service availability
+
+DDoS
+     ↓
+Targets availability from many sources
+```
